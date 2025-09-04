@@ -18,7 +18,7 @@ summary_type = st.sidebar.radio("Choose summary format:", [
 use_advanced = st.sidebar.checkbox("Use Advanced Model (GPT-4o)")
 
 # Select model
-model = "gpt-4o" if use_advanced else "gpt-4o-mini"
+model = "gpt-4o" if use_advanced else "gpt-3.5-turbo"
 
 # File uploader
 uploaded_file = st.file_uploader("Upload a .txt or .md file", type=("txt", "md"))
