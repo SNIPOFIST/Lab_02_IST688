@@ -4,10 +4,10 @@ import openai
 # Use the secret key from .streamlit/secrets.toml
 client = openai.OpenAI(api_key=st.secrets["api_keys"]["openai_key"])
 
-st.title("🧠 Document Summarizer (Lab 2C)")
+st.title(" Document Summarizer with GPT-3.5 and GPT.4o (Lab 2C)")
 
 # Sidebar controls
-st.sidebar.title("⚙️ Summary Options")
+st.sidebar.title("Summary Options")
 
 summary_type = st.sidebar.radio("Choose summary format:", [
     "100-word summary",
