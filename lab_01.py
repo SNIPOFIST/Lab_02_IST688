@@ -1,59 +1,56 @@
-
 import streamlit as st
-from openai import OpenAI
+import openai
 
-# Show title and description.
-st.title("📄 Document question answering")
-st.write(
-    "Upload a document below and ask a question about it – GPT will answer! "
-    "To use this app, you need to provide an OpenAI API key, which you can get "
-    "from your OpenAI account."
-)
+# Use the secret key from .streamlit/secrets.toml
+client = openai.OpenAI(api_key=st.secrets["api_keys"]["openai_key"])
 
-# Ask user for their OpenAI API key via `st.text_input`.
-openai_api_key = st.text_input("OpenAI API Key", type="password")
+st.title(" Document Summarizer with GPT-3.5 and GPT.4o (Lab 2C)")
 
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+# Sidebar controls
+st.sidebar.title("Summary Options")
 
-    try:
-        client = OpenAI(api_key=openai_api_key)
-        _ = client.models.list()  # lightweight validation call
-        st.success("API key validated. You can upload a file and ask a question.")
-    except Exception as e:
-        st.error("Invalid API key or network issue. Please check your key and try again.")
-        st.caption(f"Details: {e}")
-        st.stop()  # stop the app here if validation fails
+summary_type = st.sidebar.radio("Choose summary format:", [
+    "100-word summary",
+    "2-paragraph summary",
+    "5 bullet points"
+])
 
-    # ---- If validation passed, show the rest of the UI ----
-    uploaded_file = st.file_uploader(
-        "Upload a document (.txt or .md)", type=("txt", "md")
+use_advanced = st.sidebar.checkbox("Use Advanced Model (GPT-4o)")
+
+# Select model
+model = "gpt-4o" if use_advanced else "gpt-3.5-turbo"
+
+# File uploader
+uploaded_file = st.file_uploader("Upload a .txt or .md file", type=("txt", "md"))
+
+if uploaded_file:
+    document = uploaded_file.read().decode(errors="ignore")
+
+    # Build prompt based on summary type
+    if summary_type == "100-word summary":
+        instruction = "Summarize the document in approximately 100 words."
+    elif summary_type == "2-paragraph summary":
+        instruction = "Summarize the document in exactly two connected paragraphs."
+    elif summary_type == "5 bullet points":
+        instruction = "Summarize the document in 5 clear and concise bullet points."
+    else:
+        instruction = "Summarize the document."
+
+    # Prepare LLM message
+    messages = [
+        {
+            "role": "user",
+            "content": f"Here's a document:\n\n{document}\n\n---\n\n{instruction}"
+        }
+    ]
+
+    # Call OpenAI API
+    stream = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        stream=True
     )
 
-    question = st.text_area(
-        "Now ask a question about the document!",
-        placeholder="Can you give me a short summary?",
-        disabled=not uploaded_file,
-    )
-
-    if uploaded_file and question:
-        # Process the uploaded file and question.
-        document = uploaded_file.read().decode(errors="ignore")
-        messages = [
-            {
-                "role": "user",
-                "content": f"Here's a document:\n\n{document}\n\n---\n\n{question}",
-            }
-        ]
-
-        # Generate an answer using the OpenAI API (streaming).
-        stream = client.chat.completions.create(
-            model="gpt-5-chat-latest",
-            messages=messages,
-            stream=True,
-        )
-
-        # Stream the response to the app using `st.write_stream`.
-        # If your Streamlit version needs a generator, switch to a token generator.
-        st.write_stream(stream)
+    # Display output
+    st.write(f"🔍 Summary using **{model}** in format: *{summary_type}*")
+    st.write_stream(stream)
